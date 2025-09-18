@@ -2,7 +2,9 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-rpc_endpoints = { sepolia = "https://eth-sepolia.g.alchemy.com/v2/xDIkha9eFGfbRRDHmSjHRrfpD5bzjvu2", arb-sepolia = "https://arb-sepolia.g.alchemy.com/v2/xDIkha9eFGfbRRDHmSjHRrfpD5bzjvu2"}
+
+# RPC Endpoints for different networks - add from .env
+rpc_endpoints = { sepolia = "", arb-sepolia = ""}
 
 remappings = [
     "@forge-std/=lib/forge-std/src/",

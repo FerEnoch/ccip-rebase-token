@@ -5,10 +5,9 @@ pragma solidity ^0.8.24;
 import {IRebaseToken} from "../src/interfaces/IRebaseToken.sol";
 import {RebaseToken} from "../src/RebaseToken.sol";
 import {IAccessControl} from "@openzeppelin/access/IAccessControl.sol";
-import {AccessControl} from "@openzeppelin/access/AccessControl.sol";
 import {Ownable} from "@openzeppelin/access/Ownable.sol";
 import {Vault} from "../src/Vault.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract RebaseTokenTest is Test {
     RebaseToken private rebaseToken;

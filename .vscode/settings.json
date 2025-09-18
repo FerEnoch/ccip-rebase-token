@@ -1,0 +1,5 @@
+{
+    "codacy.guardrails.analyzeGeneratedCode": "disabled",
+    "codacy.guardrails.rulesFile": "disabled",
+    "codacy.cli.analysisMode": "disabled"
+}

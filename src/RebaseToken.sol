@@ -25,11 +25,11 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     // We could increase the truncation precision by using a larger scale factor, e.g. `1e27'
     // Then, we'll need to adjust the interest rate accordingly with a formula, e.g. (5 * PRECISION_FACTOR) / 1e8
     // uint256 private s_interestRate = 5e10; // 5 * 10^-8 = 5 * 1 / 10^8
-    uint256 private s_interestRate = (5 * PRECISION_FACTOR) / 1e8;
+    uint256 private interestRate = (5 * PRECISION_FACTOR) / 1e8;
     bytes32 private constant MINT_AND_BURN_ROLE =
         keccak256("MINT_AND_BURN_ROLE"); // This role is used to mint and burn tokens.
-    mapping(address => uint256) private s_userInterestRate;
-    mapping(address => uint256) private s_userLastUpdatedTimestamp;
+    mapping(address => uint256) private userInterestRate;
+    mapping(address => uint256) private userLastUpdatedTimestamp;
 
     //////// events
     event InterestRateSet(uint256 newInterestRate);
@@ -49,14 +49,14 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @dev The interest rate can only be decreased.
      */
     function setInterestRate(uint256 _newInterestRate) external onlyOwner {
-        if (_newInterestRate > s_interestRate) {
+        if (_newInterestRate > interestRate) {
             revert RebaseToken__InterestRateCanOnlyDecrease(
-                s_interestRate,
+                interestRate,
                 _newInterestRate
             );
         }
         // uint256 oldRate = s_interestRate;
-        s_interestRate = _newInterestRate;
+        interestRate = _newInterestRate;
         emit InterestRateSet(_newInterestRate);
     }
 
@@ -96,7 +96,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         // - For first time depositors, the interest rate is set to the current global interest rate.
         // - For users who already have a deposit, the global interest rate WILL be changed (e.g. [note ->] decreased).
         // This design can incentivize early or large deposits when rates are favorable (e.g. as early as possible).
-        s_userInterestRate[_to] = _interestRate;
+        userInterestRate[_to] = _interestRate;
 
         // 3. Mint the newly deposited amount
         _mint(_to, _amount);
@@ -206,7 +206,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         if (balanceOf(_recipient) == 0 && _amount > 0) {
             // Ensure _amount > 0 to avoid setting rate on 0 value initial transfer.
             // If the recipient has no balance, we set their interest rate to the current user's interest rate.
-            s_userInterestRate[_recipient] = s_userInterestRate[msg.sender];
+            userInterestRate[_recipient] = userInterestRate[msg.sender];
         }
 
         // Call the super transfer function to transfer the tokens.
@@ -239,7 +239,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         // Set recipient's interest rate if they are new
         if (balanceOf(_recipient) == 0 && _amount > 0) {
             // If the recipient has no balance, we set their interest rate to the current user's interest rate.
-            s_userInterestRate[_recipient] = s_userInterestRate[_sender];
+            userInterestRate[_recipient] = userInterestRate[_sender];
         }
 
         return super.transferFrom(_sender, _recipient, _amount);
@@ -272,24 +272,25 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         //  accumulatedInterestRate = 15 + (15 * 0.05 * 10) = 15 + (15 * 0.5) = 15 + 7.5 = 22.5
 
         // Calculate the time elapsed since the last update
-        uint256 timeElapsed = block.timestamp -
-            s_userLastUpdatedTimestamp[_user];
+        uint256 timeElapsed = block.timestamp - userLastUpdatedTimestamp[_user];
 
         // If the time elapsed is 0 or the user has no interest rate (e.g. never interacted), the growth factor is
         // simply 1 (scaled by the precision factor)
         // This means that no interest has accumulated since the last update.
-        if (timeElapsed == 0 || s_userInterestRate[_user] == 0) {
+        if (timeElapsed == 0 || userInterestRate[_user] == 0) {
             return PRECISION_FACTOR;
         }
 
         // Get the user's interest rate
-        uint256 userInterestRate = s_userInterestRate[_user];
+        uint256 currentUserInterestRate = userInterestRate[_user];
 
         // Calculate the total fractional interest accrued: userInterestRate * TimeElapsed
         // The product is already scaled properly if userInterestRate is stored scaled.
         // Formula for the growth factor: 1 + totallFractionalInterestAccrued
         // Since 1 is represented by PRECISION_FACTOR, and fractionalInterest is already scaled, we add them directly.
-        linearInterest = PRECISION_FACTOR + (userInterestRate * timeElapsed);
+        linearInterest =
+            PRECISION_FACTOR +
+            (currentUserInterestRate * timeElapsed);
     }
 
     /**
@@ -316,7 +317,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
 
         // (4) Set the user's last updated timestamp (Effect):
         // Before minting, we update the user's last interaction timestamp.
-        s_userLastUpdatedTimestamp[_user] = block.timestamp;
+        userLastUpdatedTimestamp[_user] = block.timestamp;
 
         // (5) Call _mint (inhereted from ERC20 contract) to mint the tokens to the user (Interaction):
         // Common good practice and optimization: only mint if there is an increase in balance.
@@ -331,7 +332,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @return The current interest rate of the contract.
      */
     function getInterestRate() external view returns (uint256) {
-        return s_interestRate;
+        return interestRate;
     }
 
     /**
@@ -342,6 +343,6 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     function getUserInterestRate(
         address _user
     ) external view returns (uint256) {
-        return s_userInterestRate[_user];
+        return userInterestRate[_user];
     }
 }

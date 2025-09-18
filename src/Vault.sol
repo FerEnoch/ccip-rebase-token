@@ -14,7 +14,7 @@ contract Vault {
     //   - Sends the corresponding amount of ETH back to the user
     // 4. Implement a mechanism to add ETH rewards to the vault.
 
-    IRebaseToken private immutable i_rebaseToken;
+    IRebaseToken private immutable REBASE_TOKEN;
 
     event Deposit(address indexed user, uint256 amount);
     event Redeem(address indexed user, uint256 amount);
@@ -22,7 +22,7 @@ contract Vault {
     error Vault_RedeemFailed();
 
     constructor(IRebaseToken _rebaseToken) {
-        i_rebaseToken = _rebaseToken;
+        REBASE_TOKEN = _rebaseToken;
     }
 
     /**
@@ -50,8 +50,8 @@ contract Vault {
         }
 
         // Call the mint function on the RebaseToken contract
-        uint256 interestRate = i_rebaseToken.getInterestRate();
-        i_rebaseToken.mint(msg.sender, amountToMint, interestRate);
+        uint256 interestRate = REBASE_TOKEN.getInterestRate();
+        REBASE_TOKEN.mint(msg.sender, amountToMint, interestRate);
 
         // Emit an event to log the deposit
         emit Deposit(msg.sender, amountToMint);
@@ -65,13 +65,13 @@ contract Vault {
     function redeem(uint256 _amount) external {
         uint256 amountToRedeem = _amount;
         if (amountToRedeem == type(uint256).max) {
-            amountToRedeem = i_rebaseToken.balanceOf(msg.sender);
+            amountToRedeem = REBASE_TOKEN.balanceOf(msg.sender);
         }
 
         // 1. Effects (State changes occur first)
         // Burn the specified amount of tokens from the caller (msg.sender)
         // The RebaseToken's burn function should handle checks for sufficient balance.
-        i_rebaseToken.burn(msg.sender, amountToRedeem);
+        REBASE_TOKEN.burn(msg.sender, amountToRedeem);
 
         // 2. Interactions (External calls occur after state changes)
         // Transfer the equivalent _amount of WEI to msg.sender
@@ -89,6 +89,6 @@ contract Vault {
      * @return The address of the RebaseToken.
      */
     function getRebaseTokenAddress() external view returns (address) {
-        return address(i_rebaseToken);
+        return address(REBASE_TOKEN);
     }
 }

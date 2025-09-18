@@ -7,6 +7,12 @@ pragma solidity ^0.8.24;
  */
 interface IRebaseToken {
     /**
+     * @notice Grants the mint and burn role to a specified address.
+     * @param account The address to grant the mint and burn role to.
+     */
+    function grantMintAndBurnRole(address account) external;
+
+    /**
      * @notice Mints new tokens to a specified address.
      * @param to The address to mint tokens to.
      * @param amount The amount of tokens to mint.
